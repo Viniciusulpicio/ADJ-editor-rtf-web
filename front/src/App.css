@@ -1,0 +1,60 @@
+/* Estilos gerais para a aplicação */
+.App {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 20px;
+  font-family: sans-serif;
+  text-align: center;
+  color: #333;
+}
+
+h1 {
+  color: #2c3e50;
+}
+
+/* --- ESTILOS IMPORTANTES PARA O EDITOR --- */
+
+/* 1. Estiliza o contêiner que segura o editor */
+.editor-container {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  border: 1px solid #ccc; /* Adiciona uma borda para que você possa vê-lo */
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* 2. Regra CRÍTICA: Define uma altura mínima para a área de escrita do CKEditor */
+/* O CKEditor adiciona a classe .ck-editor__editable_inline ao elemento onde você digita. */
+.ck-editor__editable_inline {
+  min-height: 300px; /* Sem isso, o editor pode ter altura 0 e ficar invisível! */
+}
+
+/* --- FIM DOS ESTILOS IMPORTANTES --- */
+
+
+/* Estilos para o botão e a mensagem de status (melhora a experiência) */
+.save-button {
+  background-color: #4CAF50; /* Verde */
+  color: white;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+.save-button:hover {
+  background-color: #45a049;
+}
+
+.save-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.status-message {
+  margin-top: 15px;
+  font-weight: bold;
+  color: #007bff;
+}
