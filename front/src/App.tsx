@@ -1,3 +1,4 @@
+// src/App.tsx
 import { useState } from "react";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
@@ -20,19 +21,28 @@ export default function App() {
 
   return (
     <div style={{ maxWidth: 800, margin: "50px auto" }}>
+      <h1>Editor CKEditor</h1>
       <CKEditor
         editor={ClassicEditor}
         data={data}
-        onReady={editor => console.log("Editor pronto!", editor)}
+        onReady={editor => {
+          console.log("Editor pronto!", editor);
+        }}
         onChange={(event, editor) => setData(editor.getData())}
         config={{
-          toolbar: [
-            "heading", "|",
-            "bold", "italic", "link", "blockQuote", "|",
-            "numberedList", "bulletedList", "|",
-            "insertTable", "imageUpload", "|",
-            "undo", "redo"
-          ]
+          toolbar: {
+            items: [
+              "heading", "|",
+              "bold", "italic", "link", "blockQuote", "|",
+              "numberedList", "bulletedList", "|",
+              "insertTable", "imageUpload", "|",
+              "undo", "redo"
+             ]
+          },
+          // Configuração para o upload de imagens
+          simpleUpload: {
+            uploadUrl: "http://localhost:3001/api/upload-image"
+          }
         }}
       />
       <button onClick={handleSave} style={{ marginTop: 20, padding: "10px 20px" }}>
