@@ -686,18 +686,7 @@
     ckeditor5 "46.1.1"
     es-toolkit "1.39.5"
 
-"@ckeditor/ckeditor5-font@42.0.2":
-  version "42.0.2"
-  resolved "https://registry.npmjs.org/@ckeditor/ckeditor5-font/-/ckeditor5-font-42.0.2.tgz"
-  integrity sha512-Soj1auf82Zz6y56qKf6nV6RSjNPENZm9vpkJ9jhyQ4pMh6YvQ7EkzbOwPCoskXm+ab8EAuH+bjS0n5lewN5i7Q==
-  dependencies:
-    "@ckeditor/ckeditor5-core" "42.0.2"
-    "@ckeditor/ckeditor5-engine" "42.0.2"
-    "@ckeditor/ckeditor5-ui" "42.0.2"
-    "@ckeditor/ckeditor5-utils" "42.0.2"
-    ckeditor5 "42.0.2"
-
-"@ckeditor/ckeditor5-font@46.1.1":
+"@ckeditor/ckeditor5-font@^46.1.1", "@ckeditor/ckeditor5-font@46.1.1":
   version "46.1.1"
   resolved "https://registry.npmjs.org/@ckeditor/ckeditor5-font/-/ckeditor5-font-46.1.1.tgz"
   integrity sha512-TqIoOUUChwN9cEKCIn30m9Y95VZU7PQyn20mIbG4/iQItI8IyzlToFAdb+xPaL2ozUcyzTFTGqx0nz9zqKNtWQ==
@@ -708,6 +697,17 @@
     "@ckeditor/ckeditor5-ui" "46.1.1"
     "@ckeditor/ckeditor5-utils" "46.1.1"
     ckeditor5 "46.1.1"
+
+"@ckeditor/ckeditor5-font@42.0.2":
+  version "42.0.2"
+  resolved "https://registry.npmjs.org/@ckeditor/ckeditor5-font/-/ckeditor5-font-42.0.2.tgz"
+  integrity sha512-Soj1auf82Zz6y56qKf6nV6RSjNPENZm9vpkJ9jhyQ4pMh6YvQ7EkzbOwPCoskXm+ab8EAuH+bjS0n5lewN5i7Q==
+  dependencies:
+    "@ckeditor/ckeditor5-core" "42.0.2"
+    "@ckeditor/ckeditor5-engine" "42.0.2"
+    "@ckeditor/ckeditor5-ui" "42.0.2"
+    "@ckeditor/ckeditor5-utils" "42.0.2"
+    ckeditor5 "42.0.2"
 
 "@ckeditor/ckeditor5-fullscreen@46.1.1":
   version "46.1.1"
