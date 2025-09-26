@@ -1,7 +1,7 @@
 // src/App.tsx
 import { useState } from "react";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
-import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
+import CustomEditor from "./ckeditor";
 import axios from "axios";
 
 export default function App() {
@@ -23,23 +23,15 @@ export default function App() {
     <div style={{ maxWidth: 800, margin: "50px auto" }}>
       <h1>Editor CKEditor</h1>
       <CKEditor
-        editor={ClassicEditor}
+        // Use a sua classe de editor personalizada aqui
+        editor={CustomEditor}
         data={data}
         onReady={editor => {
           console.log("Editor pronto!", editor);
         }}
         onChange={(event, editor) => setData(editor.getData())}
         config={{
-          toolbar: {
-            items: [
-              "heading", "|",
-              "bold", "italic", "link", "blockQuote", "|",
-              "numberedList", "bulletedList", "|",
-              "insertTable", "imageUpload", "|",
-              "undo", "redo"
-             ]
-          },
-          // Configuração para o upload de imagens
+          // O SimpleUploadAdapter agora existe e irá ler esta configuração!
           simpleUpload: {
             uploadUrl: "http://localhost:3001/api/upload-image"
           }
