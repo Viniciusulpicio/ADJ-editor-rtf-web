@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import  { useState, useRef } from "react";
 import { Editor } from "@tinymce/tinymce-react";
 import type { Editor as TinyMCEEditor } from "tinymce";
 import axios from "axios";
@@ -39,6 +39,7 @@ export default function WritePage({ onBack }: WritePageProps) {
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: "20px",
+          
         }}
       >
         <button
@@ -60,7 +61,7 @@ export default function WritePage({ onBack }: WritePageProps) {
 
       <div style={{ opacity: isEditorReady ? 1 : 0.5 }}>
         <Editor
-          apiKey="5oplehaovgqxjjpyczs1j02jg64k4nzh8ef69nyffd9lpk2p"
+         apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
           onInit={(_, editor) => {
             editorRef.current = editor;
             editor.setContent(initialValue);

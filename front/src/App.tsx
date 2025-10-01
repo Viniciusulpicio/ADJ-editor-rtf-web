@@ -31,6 +31,20 @@ export default function App() {
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f5f5f5" }}>
+    <style>
+      {`
+        /* Remove botão de promoção */
+        .tox .tox-promotion-button {
+          display: none !important;
+        }
+
+        /* Remove branding da barra de status */
+        .tox .tox-statusbar__branding {
+          display: none !important;
+        }
+      `}
+    </style>
+
       {currentPage === "home" && (
         <HomePage onWrite={navigateToWrite} onRead={navigateToRead} />
       )}
@@ -44,4 +58,5 @@ export default function App() {
       )}
     </div>
   );
+
 }

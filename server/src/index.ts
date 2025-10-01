@@ -25,7 +25,5 @@ app.get("/api/health", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n🚀 Servidor rodando em http://localhost:${PORT}`);
-  console.log(`📁 Uploads: ${UPLOADS_DIR}`);
-  console.log(`📄 Output: ${OUTPUT_DIR}`);
+  console.log(`\n Servidor rodando em http://localhost:${PORT}`);
 });

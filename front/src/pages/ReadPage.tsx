@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import  { useState, useRef, useEffect } from "react";
 import { Editor } from "@tinymce/tinymce-react";
 import type { Editor as TinyMCEEditor } from "tinymce";
 import axios from "axios";
@@ -44,6 +44,7 @@ export default function ReadPage({
   const loadDocuments = async () => {
     try {
       const res = await axios.get("http://localhost:3001/api/documents");
+      console.log("[DEBUG] Documentos carregados:", res.data);
       setDocuments(res.data.documents);
       setLoading(false);
     } catch (err) {
@@ -55,16 +56,33 @@ export default function ReadPage({
 
   const loadDocument = async (filename: string) => {
     try {
+      console.log("[DEBUG] Carregando documento:", filename);
       const res = await axios.get(
         `http://localhost:3001/api/documents/${filename}`
       );
+      
+      if (!res.data.htmlContent || res.data.htmlContent.trim() === "") {
+        console.error("HTML vazio recebido da API!");
+        alert("Documento vazio ou erro ao carregar conteúdo");
+        return;
+      }
+      
       setHtmlContent(res.data.htmlContent);
       setCurrentDocument(filename);
+      
       if (editorRef.current) {
+        console.log("Definindo conteúdo no editor...");
         editorRef.current.setContent(res.data.htmlContent);
+        console.log(" Conteúdo definido no editor");
+      } else {
+        console.log("Editor ainda não está pronto");
       }
     } catch (err) {
       console.error("Erro ao carregar documento:", err);
+      if (axios.isAxiosError(err)) {
+        console.error("Resposta do erro:", err.response?.data);
+        console.error("Status:", err.response?.status);
+      }
       alert("Erro ao carregar documento");
     }
   };
@@ -73,6 +91,8 @@ export default function ReadPage({
     if (!currentDocument || !editorRef.current) return;
 
     const updatedHtml = editorRef.current.getContent();
+    console.log("[DEBUG] Salvando documento:", currentDocument);
+    console.log("[DEBUG] HTML a ser salvo:", updatedHtml.substring(0, 500));
 
     try {
       await axios.put(
@@ -169,7 +189,7 @@ export default function ReadPage({
                 }}
               >
                 <h3 style={{ marginBottom: "10px", color: "#333" }}>
-                  📄 {doc.filename}
+                  {doc.filename}
                 </h3>
                 <p style={{ fontSize: "14px", color: "#666", margin: "5px 0" }}>
                   Tamanho: {(doc.size / 1024).toFixed(2)} KB
@@ -212,14 +232,32 @@ export default function ReadPage({
         <div style={{ width: "100px" }}></div>
       </div>
 
+      {/* Debug info */}
+      <div style={{ 
+        marginBottom: "20px", 
+        padding: "10px", 
+        backgroundColor: "#f0f0f0",
+        borderRadius: "5px",
+        fontSize: "12px"
+      }}>
+        <strong>Debug Info:</strong><br/>
+        HTML carregado: {htmlContent.length} caracteres<br/>
+        Editor pronto: {isEditorReady ? "Sim" : "Não"}
+      </div>
+
       <div style={{ opacity: isEditorReady ? 1 : 0.5 }}>
         <Editor
-          apiKey="5oplehaovgqxjjpyczs1j02jg64k4nzh8ef69nyffd9lpk2p"
+          apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
           onInit={(_, editor) => {
+            console.log("Editor inicializado");
             editorRef.current = editor;
-            editor.setContent(htmlContent);
+            if (htmlContent) {
+              console.log("Setando conteúdo inicial no editor:", htmlContent.substring(0, 200));
+              editor.setContent(htmlContent);
+            }
             setIsEditorReady(true);
           }}
+          initialValue={htmlContent}
           init={{
             height: 500,
             menubar: true,
@@ -296,3 +334,4 @@ export default function ReadPage({
     </div>
   );
 }
+

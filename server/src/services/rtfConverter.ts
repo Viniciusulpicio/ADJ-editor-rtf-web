@@ -32,7 +32,11 @@ export function convertHtmlToRtf(html: string): string {
 }
 
 function applyRtfFormatting(content: string): string {
-  return content
+  let olCounter = 1; // contador de listas ordenadas
+
+  // Primeiro aplica todos os replaces "fixos"
+  content = content
+    // Títulos
     .replace(/__H1_START__/g, '\\par\\pard\\sb240\\sa120{\\b\\fs48 ')
     .replace(/__H1_END__/g, '}\\par\\pard\\sa200\\sl276\\slmult1\n')
     .replace(/__H2_START__/g, '\\par\\pard\\sb200\\sa100{\\b\\fs36 ')
@@ -45,9 +49,21 @@ function applyRtfFormatting(content: string): string {
     .replace(/__H5_END__/g, '}\\par\\pard\\sa200\\sl276\\slmult1\n')
     .replace(/__H6_START__/g, '\\par\\pard\\sb80\\sa40{\\b\\fs24 ')
     .replace(/__H6_END__/g, '}\\par\\pard\\sa200\\sl276\\slmult1\n')
+
+    // Alinhamentos
+    .replace(/__P_CENTER_START__/g, '\\par\\pard\\qc ')
+    .replace(/__P_CENTER_END__/g, '\\par\\pard\\sa200\\sl276\\slmult1\n')
+    .replace(/__P_RIGHT_START__/g, '\\par\\pard\\qr ')
+    .replace(/__P_RIGHT_END__/g, '\\par\\pard\\sa200\\sl276\\slmult1\n')
+    .replace(/__P_JUSTIFY_START__/g, '\\par\\pard\\qj ')
+    .replace(/__P_JUSTIFY_END__/g, '\\par\\pard\\sa200\\sl276\\slmult1\n')
+
+    // Parágrafos normais
     .replace(/__P_START__/g, '\\par ')
     .replace(/__P_END__/g, '\n')
     .replace(/__BR__/g, '\\line ')
+
+    // Formatação inline
     .replace(/__STRONG_START__/g, '{\\b ')
     .replace(/__STRONG_END__/g, '}')
     .replace(/__B_START__/g, '{\\b ')
@@ -66,29 +82,51 @@ function applyRtfFormatting(content: string): string {
     .replace(/__SUP_END__/g, '}')
     .replace(/__LINK_START__/g, '{\\ul\\cf2 ')
     .replace(/__LINK_END__/g, '}')
+
+    // Blocos especiais
     .replace(/__QUOTE_START__/g, '\\par\\pard\\li720\\ri720\\sb120\\sa120{\\i\\cf3 ')
     .replace(/__QUOTE_END__/g, '}\\par\\pard\\sa200\\sl276\\slmult1\n')
     .replace(/__CODE_START__/g, '{\\f1\\fs20 ')
     .replace(/__CODE_END__/g, '}')
     .replace(/__PRE_START__/g, '\\par\\pard\\sb120\\sa120{\\f1\\fs20\n')
     .replace(/__PRE_END__/g, '}\\par\\pard\\sa200\\sl276\\slmult1\n')
+
+    // Divisórias
+    .replace(/__HR__/g, '\\par\\pard\\brdrb\\brdrs\\brdrw10\\brsp20\\par\\pard\\sa200\\sl276\\slmult1\n')
+
+    // Divs
     .replace(/__DIV_START__/g, '\\par ')
     .replace(/__DIV_END__/g, '\\par\n')
-    .replace(/__UL_START__/g, '\\par\n')
-    .replace(/__UL_END__/g, '\\par\n')
-    .replace(/__OL_START__/g, '\\par\n')
-    .replace(/__OL_END__/g, '\\par\n')
-    .replace(/__LI__/g, '\\pard\\li720\\fi-360\\bullet\\tab ')
-    .replace(/__LI_END__/g, '\\par\\pard\\sa200\\sl276\\slmult1\n')
+
+    // Listas não ordenadas
+    .replace(/__UL_START__/g, '\\par ')
+    .replace(/__UL_END__/g, '\\par ')
+    .replace(/__LI__/g, '\\pard\\li720\\fi-360{\\pntext\\f0 •\\tab}')
+    .replace(/__LI_END__/g, '\\par ')
+
+    // Fechamento de OL (abertura/fechamento sem contador)
+    .replace(/__OL_START__/g, '\\par ')
+    .replace(/__OL_END__/g, '\\par ')
+    .replace(/__OLI_END__/g, '\\par ')
+
+    // Tabelas
     .replace(/__TABLE_START__/g, '\\par\n')
     .replace(/__TABLE_END__/g, '\\par\n')
-    .replace(/__TR_START__/g, '')
-    .replace(/__TR_END__/g, '\\par\n')
-    .replace(/__TD__/g, '')
-    .replace(/__TD_END__/g, ' \\tab ')
-    .replace(/__TH__/g, '{\\b ')
-    .replace(/__TH_END__/g, '} \\tab ');
+    .replace(/__TR_START__/g, '\\trowd\\trgaph70\\trleft-70\\trbrdrt\\brdrs\\brdrw10\\trbrdrl\\brdrs\\brdrw10\\trbrdrb\\brdrs\\brdrw10\\trbrdrr\\brdrs\\brdrw10\n')
+    .replace(/__TR_END__/g, '\\row\n')
+    .replace(/__TD__/g, '\\clbrdrt\\brdrw10\\brdrs\\clbrdrl\\brdrw10\\brdrs\\clbrdrb\\brdrw10\\brdrs\\clbrdrr\\brdrw10\\brdrs\\cellx3000\\pard\\intbl ')
+    .replace(/__TD_END__/g, '\\cell ')
+    .replace(/__TH__/g, '\\clbrdrt\\brdrw10\\brdrs\\clbrdrl\\brdrw10\\brdrs\\clbrdrb\\brdrw10\\brdrs\\clbrdrr\\brdrw10\\brdrs\\cellx3000\\pard\\intbl{\\b ')
+    .replace(/__TH_END__/g, '}\\cell ');
+
+  // Agora tratamos __OLI__ com contador incremental
+  content = content.replace(/__OLI__/g, () => {
+    return `\\pard\\li720\\fi-360{\\pntext\\f0 ${olCounter++}.\\tab}`;
+  });
+
+  return content;
 }
+
 
 function buildRtfDocument(content: string): string {
   let rtf = '{\\rtf1\\ansi\\deff0\n';
