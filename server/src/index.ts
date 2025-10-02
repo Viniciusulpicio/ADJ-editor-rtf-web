@@ -1,11 +1,15 @@
 
 
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import cors from "cors";
 import fs from "fs";
 import { PORT, UPLOADS_DIR, OUTPUT_DIR } from "./config/constants";
 import uploadRoutes from "./routes/uploadRoutes";
 import documentRoutes from "./routes/documentRoutes";
+
 
 const app = express();
 

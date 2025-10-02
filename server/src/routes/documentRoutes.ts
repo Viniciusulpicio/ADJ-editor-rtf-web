@@ -7,8 +7,17 @@ import { OUTPUT_DIR } from "../config/constants";
 
 const router = Router();
 
-// Configuração: Máximo de páginas por livro
-const MAX_PAGES_PER_BOOK = 3;
+// Configuração: Máximo de páginas por livro (esta no .env para ficar mais facil de ajustar)
+if (!process.env.MAX_PAGES_PER_BOOK) {
+  throw new Error("❌ Variável de ambiente MAX_PAGES_PER_BOOK não está definida no .env");
+}
+
+const MAX_PAGES_PER_BOOK = parseInt(process.env.MAX_PAGES_PER_BOOK, 10);
+
+if (isNaN(MAX_PAGES_PER_BOOK)) {
+  throw new Error("❌ MAX_PAGES_PER_BOOK no .env precisa ser um número válido");
+}
+
 
 // Estrutura de metadata para cada documento
 interface DocumentMetadata {

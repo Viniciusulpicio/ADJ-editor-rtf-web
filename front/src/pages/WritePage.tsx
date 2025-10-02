@@ -264,7 +264,6 @@ export default function WritePage({ onBack }: WritePageProps) {
         style={{
           marginTop: 20,
           padding: "10px 20px",
-          color: "white",
           border: "none",
           borderRadius: "5px",
           cursor: isEditorReady ? "pointer" : "not-allowed",
