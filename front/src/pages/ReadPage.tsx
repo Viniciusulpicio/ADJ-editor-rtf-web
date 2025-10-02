@@ -1,4 +1,4 @@
-import  { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Editor } from "@tinymce/tinymce-react";
 import type { Editor as TinyMCEEditor } from "tinymce";
 import axios from "axios";
@@ -15,6 +15,13 @@ interface Document {
   size: number;
   createdAt: string;
   modifiedAt: string;
+  bookName: string;
+  pageNumber: number;
+}
+
+interface BookGroup {
+  bookName: string;
+  documents: Document[];
 }
 
 export default function ReadPage({
@@ -29,6 +36,8 @@ export default function ReadPage({
   );
   const [htmlContent, setHtmlContent] = useState("");
   const [isEditorReady, setIsEditorReady] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<string>("all");
+  const [currentDocInfo, setCurrentDocInfo] = useState<Document | null>(null);
   const editorRef = useRef<TinyMCEEditor | null>(null);
 
   useEffect(() => {
@@ -60,20 +69,35 @@ export default function ReadPage({
       const res = await axios.get(
         `http://localhost:3001/api/documents/${filename}`
       );
-      
+
       if (!res.data.htmlContent || res.data.htmlContent.trim() === "") {
         console.error("HTML vazio recebido da API!");
         alert("Documento vazio ou erro ao carregar conteúdo");
         return;
       }
-      
+
       setHtmlContent(res.data.htmlContent);
       setCurrentDocument(filename);
       
+      const docInfo = documents.find(d => d.filename === filename);
+      if (docInfo) {
+        setCurrentDocInfo(docInfo);
+      } else {
+        setCurrentDocInfo({
+          filename: res.data.filename,
+          bookName: res.data.bookName,
+          pageNumber: res.data.pageNumber,
+          filePath: res.data.filePath,
+          size: 0,
+          createdAt: new Date().toISOString(),
+          modifiedAt: new Date().toISOString()
+        });
+      }
+
       if (editorRef.current) {
         console.log("Definindo conteúdo no editor...");
         editorRef.current.setContent(res.data.htmlContent);
-        console.log(" Conteúdo definido no editor");
+        console.log("✓ Conteúdo definido no editor");
       } else {
         console.log("Editor ainda não está pronto");
       }
@@ -87,12 +111,70 @@ export default function ReadPage({
     }
   };
 
+  const handlePrint = () => {
+    if (editorRef.current && currentDocInfo) {
+      const content = editorRef.current.getContent();
+      const printWindow = window.open('', '_blank');
+      
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>${currentDocument}</title>
+            <style>
+              body { 
+                font-family: Arial, sans-serif; 
+                padding: 20px;
+                max-width: 800px;
+                margin: 0 auto;
+              }
+              .document-header {
+                border-bottom: 2px solid #333;
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+              }
+              .document-header h2 {
+                margin: 0 0 10px 0;
+              }
+              .document-info {
+                font-size: 12px;
+                color: #666;
+              }
+              @media print {
+                body { padding: 0; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="document-header">
+              <h2>${currentDocument}</h2>
+              <div class="document-info">
+                <strong>Localização:</strong> ${currentDocInfo.bookName}, Página ${currentDocInfo.pageNumber}
+              </div>
+            </div>
+            ${content}
+            <script>
+              window.onload = function() {
+                window.print();
+                window.onafterprint = function() {
+                  window.close();
+                };
+              };
+            </script>
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
+    }
+  };
+
   const handleSave = async () => {
     if (!currentDocument || !editorRef.current) return;
 
     const updatedHtml = editorRef.current.getContent();
     console.log("[DEBUG] Salvando documento:", currentDocument);
-    console.log("[DEBUG] HTML a ser salvo:", updatedHtml.substring(0, 500));
 
     try {
       await axios.put(
@@ -101,13 +183,76 @@ export default function ReadPage({
           htmlContent: updatedHtml,
         }
       );
-      alert("Documento atualizado com sucesso!");
+      
+      const shouldPrint = window.confirm(
+        "Documento atualizado com sucesso!\n\nDeseja imprimir a versão atualizada?"
+      );
+      
+      if (shouldPrint) {
+        handlePrint();
+      }
+      
       loadDocuments();
     } catch (err) {
       console.error("Erro ao atualizar documento:", err);
       alert("Erro ao atualizar documento");
     }
   };
+
+  const handleDelete = async (filename: string) => {
+    const confirmDelete = window.confirm(
+      `Tem certeza que deseja excluir o documento "${filename}"?\nEsta ação não pode ser desfeita.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await axios.delete(`http://localhost:3001/api/documents/${filename}`);
+      alert("Documento excluído com sucesso!");
+      loadDocuments();
+      if (currentDocument === filename) {
+        setCurrentDocument(null);
+        setCurrentDocInfo(null);
+      }
+    } catch (err) {
+      console.error("Erro ao excluir documento:", err);
+      alert("Erro ao excluir documento");
+    }
+  };
+
+  const groupedDocuments = (): BookGroup[] => {
+    const groups = new Map<string, Document[]>();
+
+    documents.forEach((doc) => {
+      const book = doc.bookName || "Sem Livro";
+      if (!groups.has(book)) {
+        groups.set(book, []);
+      }
+      groups.get(book)!.push(doc);
+    });
+
+    groups.forEach((docs) => {
+      docs.sort((a, b) => a.pageNumber - b.pageNumber);
+    });
+
+    return Array.from(groups.entries())
+      .map(([bookName, documents]) => ({
+        bookName,
+        documents,
+      }))
+      .sort((a, b) => a.bookName.localeCompare(b.bookName));
+  };
+
+  const filteredBooks = (): BookGroup[] => {
+    const allBooks = groupedDocuments();
+    if (selectedBook === "all") {
+      return allBooks;
+    }
+    return allBooks.filter((book) => book.bookName === selectedBook);
+  };
+
+  const allBooks = groupedDocuments();
+  const bookNames = allBooks.map((b) => b.bookName);
 
   if (loading) {
     return (
@@ -132,8 +277,6 @@ export default function ReadPage({
             onClick={onBack}
             style={{
               padding: "10px 20px",
-              backgroundColor: "#757575",
-              color: "white",
               border: "none",
               borderRadius: "5px",
               cursor: "pointer",
@@ -144,6 +287,40 @@ export default function ReadPage({
           <h1>Selecione um Documento</h1>
           <div style={{ width: "100px" }}></div>
         </div>
+
+        {bookNames.length > 0 && (
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "bold",
+                fontSize: "16px",
+              }}
+            >
+              Filtrar por Livro:
+            </label>
+            <select
+              value={selectedBook}
+              onChange={(e) => setSelectedBook(e.target.value)}
+              style={{
+                padding: "10px",
+                fontSize: "16px",
+                border: "1px solid #ccc",
+                borderRadius: "5px",
+                minWidth: "250px",
+              }}
+            >
+              <option value="all">Todos os Livros ({documents.length})</option>
+              {bookNames.map((bookName) => (
+                <option key={bookName} value={bookName}>
+                  {bookName} (
+                  {allBooks.find((b) => b.bookName === bookName)?.documents.length})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {documents.length === 0 ? (
           <div
@@ -158,45 +335,123 @@ export default function ReadPage({
             <p>Crie um novo documento primeiro!</p>
           </div>
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-              gap: "20px",
-            }}
-          >
-            {documents.map((doc) => (
-              <div
-                key={doc.filename}
-                onClick={() => onSelectDocument(doc.filename)}
-                style={{
-                  backgroundColor: "white",
-                  padding: "20px",
-                  borderRadius: "10px",
-                  cursor: "pointer",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                  transition: "all 0.3s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow =
-                    "0 4px 8px rgba(0,0,0,0.15)";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow =
-                    "0 2px 4px rgba(0,0,0,0.1)";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                <h3 style={{ marginBottom: "10px", color: "#333" }}>
-                  {doc.filename}
-                </h3>
-                <p style={{ fontSize: "14px", color: "#666", margin: "5px 0" }}>
-                  Tamanho: {(doc.size / 1024).toFixed(2)} KB
-                </p>
-                <p style={{ fontSize: "14px", color: "#666", margin: "5px 0" }}>
-                  Modificado: {new Date(doc.modifiedAt).toLocaleString("pt-BR")}
-                </p>
+          <div>
+            {filteredBooks().map((bookGroup) => (
+              <div key={bookGroup.bookName} style={{ marginBottom: "40px" }}>
+                <h2
+                  style={{
+                    fontSize: "24px",
+                    marginBottom: "15px",
+                    color: "#333",
+                    borderBottom: "2px solid #333",
+                    paddingBottom: "10px",
+                  }}
+                >
+                  {bookGroup.bookName}
+                </h2>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                    gap: "20px",
+                  }}
+                >
+                  {bookGroup.documents.map((doc) => (
+                    <div
+                      key={doc.filename}
+                      style={{
+                        backgroundColor: "white",
+                        padding: "20px",
+                        borderRadius: "10px",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                        transition: "all 0.3s",
+                        position: "relative",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow =
+                          "0 4px 8px rgba(0,0,0,0.15)";
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow =
+                          "0 2px 4px rgba(0,0,0,0.1)";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "10px",
+                          right: "10px",
+                          backgroundColor: "#f0f0f0",
+                          color: "#333",
+                          padding: "5px 12px",
+                          borderRadius: "20px",
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Página {doc.pageNumber}
+                      </div>
+
+                      <div
+                        onClick={() => onSelectDocument(doc.filename)}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <h3
+                          style={{
+                            marginBottom: "10px",
+                            marginTop: "25px",
+                            color: "#333",
+                          }}
+                        >
+                          {doc.filename}
+                        </h3>
+                        <p                        >
+                          Tamanho: {(doc.size / 1024).toFixed(2)} KB
+                        </p>
+                        <p>
+                          Modificado:{" "}
+                          {new Date(doc.modifiedAt).toLocaleString("pt-BR")}
+                        </p>
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: "15px",
+                          display: "flex",
+                          gap: "10px",
+                        }}
+                      >
+                        <button
+                          onClick={() => onSelectDocument(doc.filename)}
+                          style={{
+                            flex: 1,
+                            padding: "8px 16px",
+                            border: "none",
+                            borderRadius: "5px",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                          }}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDelete(doc.filename)}
+                          style={{
+                            padding: "8px 16px",
+                            border: "none",
+                            borderRadius: "5px",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                          }}
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
@@ -216,7 +471,10 @@ export default function ReadPage({
         }}
       >
         <button
-          onClick={() => setCurrentDocument(null)}
+          onClick={() => {
+            setCurrentDocument(null);
+            setCurrentDocInfo(null);
+          }}
           style={{
             padding: "10px 20px",
             backgroundColor: "#757575",
@@ -232,18 +490,37 @@ export default function ReadPage({
         <div style={{ width: "100px" }}></div>
       </div>
 
-      {/* Debug info */}
-      <div style={{ 
-        marginBottom: "20px", 
-        padding: "10px", 
-        backgroundColor: "#f0f0f0",
-        borderRadius: "5px",
-        fontSize: "12px"
-      }}>
-        <strong>Debug Info:</strong><br/>
-        HTML carregado: {htmlContent.length} caracteres<br/>
-        Editor pronto: {isEditorReady ? "Sim" : "Não"}
-      </div>
+      {currentDocInfo && (
+        <div
+          style={{
+            marginBottom: "20px",
+            padding: "15px",
+            backgroundColor: "#f0f0f0",
+            borderRadius: "5px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <strong>Localização Física:</strong>{" "}
+            {currentDocInfo.bookName}, Página {currentDocInfo.pageNumber}
+          </div>
+          <button
+            onClick={handlePrint}
+            disabled={!isEditorReady}
+            style={{
+              padding: "8px 16px",
+              border: "none",
+              borderRadius: "5px",
+              cursor: isEditorReady ? "pointer" : "not-allowed",
+              fontSize: "14px",
+            }}
+          >
+            Imprimir
+          </button>
+        </div>
+      )}
 
       <div style={{ opacity: isEditorReady ? 1 : 0.5 }}>
         <Editor
@@ -252,7 +529,6 @@ export default function ReadPage({
             console.log("Editor inicializado");
             editorRef.current = editor;
             if (htmlContent) {
-              console.log("Setando conteúdo inicial no editor:", htmlContent.substring(0, 200));
               editor.setContent(htmlContent);
             }
             setIsEditorReady(true);
@@ -315,23 +591,35 @@ export default function ReadPage({
         />
       </div>
 
-      <button
-        onClick={handleSave}
-        disabled={!isEditorReady}
-        style={{
-          marginTop: 20,
-          padding: "10px 20px",
-          backgroundColor: isEditorReady ? "#4CAF50" : "#cccccc",
-          color: "white",
-          border: "none",
-          borderRadius: "5px",
-          cursor: isEditorReady ? "pointer" : "not-allowed",
-          fontSize: "16px",
-        }}
-      >
-        Salvar Alterações
-      </button>
+      <div style={{ marginTop: 20, display: "flex", gap: "10px" }}>
+        <button
+          onClick={handleSave}
+          disabled={!isEditorReady}
+          style={{
+            padding: "10px 20px",
+            border: "none",
+            borderRadius: "5px",
+            cursor: isEditorReady ? "pointer" : "not-allowed",
+            fontSize: "16px",
+            flex: 1,
+          }}
+        >
+          Salvar Alterações
+        </button>
+        <button
+          onClick={handlePrint}
+          disabled={!isEditorReady}
+          style={{
+            padding: "10px 20px",
+            border: "none",
+            borderRadius: "5px",
+            cursor: isEditorReady ? "pointer" : "not-allowed",
+            fontSize: "16px",
+          }}
+        >
+          Imprimir
+        </button>
+      </div>
     </div>
   );
 }
-
